@@ -1,3 +1,5 @@
+import type { Estudiantes } from "~/types/estudiante"
+
 export interface Evento{
     titulo: string
     fecha: string
@@ -5,4 +7,5 @@ export interface Evento{
     lugar: string
     imagen: string
     valor: number
+    estudiantes: Estudiantes[] | null
 }

@@ -1,7 +1,6 @@
-import type { Evento } from "~/types/evento"
-export interface Estudiante{
+export interface Estudiantes{
     nombre: string
+    apellidos: string
     email: string | null
     carrera: string
-    evento: Evento | null
 }

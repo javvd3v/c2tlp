@@ -5,7 +5,7 @@ const isActive = (to: String) => route.path === to
 const navigationItems = [
     { label: 'Inicio', to: '/' },
     { label: 'Eventos', to: '/eventos' },
-    { label: 'Comunidad', to: '/comunidad' },
+    { label: 'Staff', to: '/staff' },
 ]
 
 
