@@ -93,22 +93,23 @@ async function inscribirse(eventoId: number) {
 </script>
 
 <template>
-    <div class="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 py-8 px-4 sm:px-6 lg:px-8">
+    <div class="min-h-screen bg-linear-to-b from-blue-900 to-gray-900 py-8 px-4 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto">
             <!-- Header -->
             <div class="text-center mb-10">
-                <h1 class="text-4xl font-bold text-gray-900 mb-2">Listado para Staff</h1>
-                <p class="text-lg text-gray-600">Administra la configuración de los eventos.</p>
+                <h1 class="text-4xl font-bold text-gray-100 mb-2">Listado para Staff</h1>
+                <p class="text-lg text-gray-200">Administra la configuración de los eventos.</p>
             </div>
 
             <UButton icon="i-heroicons-arrow-path" color="primary" variant="soft" :loading="pending"
-                @click="() => refresh()" class="self-start rounded-full px-5 text-course-accent-strong shadow-sm">
+                @click="() => refresh()"
+                class="self-start rounded-full px-5 text-course-accent-strong shadow-sm text-gray-300">
                 Actualizar
             </UButton>
             <!-- Botón Agregar Evento -->
             <div class="flex justify-end mb-6">
                 <UButton icon="i-heroicons-plus" color="primary" size="lg" @click="mostrarFormulario = true"
-                    class="rounded-full shadow-md hover:shadow-lg transition-shadow">
+                    class="rounded-full shadow-md hover:shadow-lg transition-shadow text-gray-300">
                     Agregar Evento
                 </UButton>
             </div>
@@ -134,7 +135,7 @@ async function inscribirse(eventoId: number) {
             <div v-else-if="eventos && eventos.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
                 <div v-for="evento in eventos" :key="evento.id"
-                    class="group bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                    class="group bg-blue-900 rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
 
                     <!-- Imagen del evento -->
                     <div class="relative h-48 overflow-hidden bg-linear-to-br from-blue-500 to-blue-800">
@@ -147,11 +148,11 @@ async function inscribirse(eventoId: number) {
 
                     <!-- Contenido de la tarjeta -->
                     <div class="p-6">
-                        <h3 class="text-xl font-bold text-gray-900 mb-2 line-clamp-1">
+                        <h3 class="text-xl font-bold text-gray-200 mb-2 line-clamp-1">
                             {{ evento.titulo }}
                         </h3>
 
-                        <div class="space-y-2 text-sm text-gray-600">
+                        <div class="space-y-2 text-sm text-gray-300">
                             <div class="flex items-center gap-2">
                                 <UIcon name="i-heroicons-calendar-days" class="w-4 h-4" />
                                 <span>{{ evento.fecha }}</span>
@@ -171,14 +172,9 @@ async function inscribirse(eventoId: number) {
 
                         <!-- Precio y botón -->
                         <div class="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
-                            <span class="text-2xl font-bold text-blue-800">
+                            <span class="text-2xl font-bold text-blue-300">
                                 {{ formatearPrecio(evento.valor) }}
                             </span>
-
-                            <UButton :disabled="cuposDisponibles(evento) === 0" color="secondary" variant="solid"
-                                size="sm" @click="inscribirse(evento.id)" class="rounded-full px-5">
-                                {{ cuposDisponibles(evento) === 0 ? 'Completo' : 'Inscribirse' }}
-                            </UButton>
                         </div>
                     </div>
                 </div>
