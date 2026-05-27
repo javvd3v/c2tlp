@@ -1,57 +1,244 @@
+<script setup lang="ts">
+import type { Evento } from '~/types/eventos'
+
+// Estado reactivo
+const mostrarFormulario = ref(false)
+const guardandoEvento = ref(false)
+const errorFormulario = ref('')
+
+// Formulario para nuevo evento
+const nuevoEvento = reactive({
+    titulo: '',
+    lugar: '',
+    fecha: '',
+    hora: '',
+    valor: 0,
+    topePersonas: 0,
+    imagenURL: ''
+})
+
+// Obtener eventos desde la API
+const { data: eventos, pending, error, refresh } = await useFetch<Evento[]>('/api/eventos')
+
+// Función para formatear cupos disponibles
+const cuposDisponibles = (evento: Evento) => {
+    const inscritos = evento.estudiantes?.length || 0
+    return evento.topePersonas - inscritos
+}
+
+// Función para formatear precio
+const formatearPrecio = (valor: number) => {
+    if (valor === 0) return 'Gratis'
+    return `$${valor.toLocaleString('es-CL')}`
+}
+
+// Limpiar formulario
+const limpiarFormulario = () => {
+    nuevoEvento.titulo = ''
+    nuevoEvento.lugar = ''
+    nuevoEvento.fecha = ''
+    nuevoEvento.hora = ''
+    nuevoEvento.valor = 0
+    nuevoEvento.topePersonas = 0
+    nuevoEvento.imagenURL = ''
+    errorFormulario.value = ''
+}
+
+// Cerrar formulario
+const cerrarFormulario = () => {
+    mostrarFormulario.value = false
+    limpiarFormulario()
+}
+
+// Crear evento
+async function crearEvento() {
+    errorFormulario.value = ''
+    guardandoEvento.value = true
+
+    try {
+        await $fetch('/api/eventos', {
+            method: 'POST',
+            body: {
+                titulo: nuevoEvento.titulo,
+                lugar: nuevoEvento.lugar,
+                fecha: nuevoEvento.fecha,
+                hora: nuevoEvento.hora,
+                imagen: nuevoEvento.imagenURL,
+                valor: nuevoEvento.valor,
+                topePersonas: nuevoEvento.topePersonas,
+                estudiantes: []
+            }
+        })
+
+        cerrarFormulario()
+        await refresh()
+    } catch (err: any) {
+        errorFormulario.value = getApiErrorMessage(err, 'No se pudo guardar el evento.')
+    } finally {
+        guardandoEvento.value = false
+    }
+}
+
+// Inscribirse a un evento
+async function inscribirse(eventoId: number) {
+    try {
+        await $fetch(`/api/eventos/${eventoId}/inscribir`, {
+            method: 'POST'
+        })
+        await refresh()
+    } catch (err: any) {
+        console.error('Error al inscribirse:', err)
+    }
+}
+</script>
+
 <template>
+    <div class="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 py-8 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-10">
+                <h1 class="text-4xl font-bold text-blue-900 mb-2">Eventos USM</h1>
+                <p class="text-lg text-gray-600">Regístrate en el evento que más te interese dentro de las opciones
+                    disponibles:</p>
+            </div>
 
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Eventos - Usm Events</title>
+            <UButton icon="i-heroicons-arrow-path" color="primary" variant="soft" :loading="pending"
+                @click="() => refresh()" class="self-start rounded-full px-5 text-course-accent-strong shadow-sm mb-6">
+                Actualizar
+            </UButton>
 
-        <link rel="shorcut icon" href="~/assets/img/Logo_UTFSM.png" type="image/png">
-    </head>
+            <!-- Estado de carga -->
+            <div v-if="pending" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div v-for="i in 3" :key="i" class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                    <USkeleton class="h-48 w-full" />
+                    <div class="p-6 space-y-3">
+                        <USkeleton class="h-6 w-3/4" />
+                        <USkeleton class="h-4 w-full" />
+                        <USkeleton class="h-4 w-full" />
+                        <USkeleton class="h-10 w-full mt-4" />
+                    </div>
+                </div>
+            </div>
 
-    <body>
-        <nav class="bg-linear-to-b from-blue-950 to-blue-900 text-white p-4 sticky">
+            <!-- Error -->
+            <UAlert v-if="error" color="error" variant="soft" class="rounded-2xl mb-6"
+                :title="error.statusMessage || 'Error al cargar los eventos'" icon="i-heroicons-exclamation-triangle" />
 
-            <!-- Hero -->
-            <header>
-                <p class="flex justify-center text-md font-medium text-center bg-blue-900 text-white px-5 py-5">
-                    Acá se encuentran los eventos más recientes dentro de la universidad, haciendo énfasis a las
-                    actividades culturales y académicas.
-                </p>
+            <!-- Grid de tarjetas de eventos -->
+            <div v-else-if="eventos && eventos.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-            </header>
+                <div v-for="evento in eventos" :key="evento.id"
+                    class="group bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
 
-            <!-- Cards -->
-
-            <section
-                class=" max-w-8xl mx-auto px-8 text-center font-sans text-5xl bg-linear-to-b from-blue-900 to-gray-900 py-20">
-                <!-- cards de eventos -->
-                <h2 class="text-3xl font-light text-center text-white mb-15">
-                    Próximos eventos:
-
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 p-4 justify-items-center">
-
-                        <!-- Card 1 Eventos -->
-                        <div class="flex flex-col  bg-gray-800 rounded-xl shadow-lg p-6 mb-6 ">
-                            <img src="https://www.valparaisonoticias.cl/wp-content/uploads/2023/04/occh-teatro-aula-magna-3.jpg"
-                                alt="Evento 1" class="object-cover w-full h-48 rounded xl items-center">
-                            <h3 class="text-md font-semibold mb-2 text-yellow-300 ">Concierto de Ópera - 21
-                                de Abril, 18:00 hrs</h3>
-                            <p class="text-sm text-gray-300">Música - $2000</p>
+                    <!-- Imagen del evento -->
+                    <div class="relative h-48 overflow-hidden bg-linear-to-br from-blue-500 to-blue-800">
+                        <img v-if="evento.imagen" :src="evento.imagen" :alt="evento.titulo"
+                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                        <div v-else class="w-full h-full flex items-center justify-center">
+                            <UIcon name="i-heroicons-calendar" class="w-16 h-16 text-white/50" />
                         </div>
-
                     </div>
 
-                </h2>
-            </section>
-        </nav>
+                    <!-- Contenido de la tarjeta -->
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-gray-900 mb-2 line-clamp-1">
+                            {{ evento.titulo }}
+                        </h3>
 
-        <!-- Pie de página -->
-        <footer>
-            <div class="bg-gray-900 text-white text-center py-5 mt-auto">
-                <p>&copy; Javier Zamora, Ing. Informatica, Taller De Lenguaje de Programación.</p>
-                <img class="hidden md:flex items-start justify-center" src="./img/Logo_UTFSM.png" alt="USM Logo"
-                    style="height: 70px; margin-top: 10px;">
+                        <div class="space-y-2 text-sm text-gray-600">
+                            <div class="flex items-center gap-2">
+                                <UIcon name="i-heroicons-calendar-days" class="w-4 h-4" />
+                                <span>{{ evento.fecha }}</span>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <UIcon name="i-heroicons-map-pin" class="w-4 h-4" />
+                                <span>{{ evento.lugar || 'Lugar por definir' }}</span>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <UIcon name="i-heroicons-users" class="w-4 h-4" />
+                                <span>{{ cuposDisponibles(evento) }} cupos disponibles de {{ evento.topePersonas
+                                }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Precio y botón -->
+                        <div class="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+                            <span class="text-2xl font-bold text-blue-800">
+                                {{ formatearPrecio(evento.valor) }}
+                            </span>
+
+                            <UButton :disabled="cuposDisponibles(evento) === 0" color="secondary" variant="solid"
+                                size="sm" @click="inscribirse(evento.id)" class="rounded-full px-5">
+                                {{ cuposDisponibles(evento) === 0 ? 'Completo' : 'Inscribirse' }}
+                            </UButton>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </footer>
-    </body>
+
+            <!-- Mensaje sin eventos -->
+            <div v-else-if="!error && !pending && (!eventos || eventos.length === 0)"
+                class="text-center py-12 bg-white rounded-2xl shadow-sm">
+                <UIcon name="i-heroicons-calendar" class="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p class="text-gray-500 text-lg">No hay eventos actualmente</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para crear evento -->
+    <BaseFormModal v-model:open="mostrarFormulario" title="Crear Nuevo Evento"
+        description="Ingresa los detalles del nuevo evento para publicarlo en la plataforma.">
+        <form class="space-y-5" @submit.prevent="crearEvento">
+            <UAlert v-if="errorFormulario" color="error" variant="soft" :title="errorFormulario" class="mb-4" />
+
+            <UFormField label="Título del Evento" required name="titulo">
+                <UInput v-model="nuevoEvento.titulo" placeholder="Ej: Workshop de Vue" required />
+            </UFormField>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <UFormField label="Lugar" name="lugar">
+                    <UInput v-model="nuevoEvento.lugar" placeholder="Ej: Auditorio Central" />
+                </UFormField>
+
+                <UFormField label="Hora" name="hora">
+                    <UInput v-model="nuevoEvento.hora" type="time" placeholder="--:--" />
+                </UFormField>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <UFormField label="Fecha del Evento" required name="fecha">
+                    <UInput v-model="nuevoEvento.fecha" type="date" required />
+                </UFormField>
+
+                <UFormField label="Cupos Máximos" required name="topePersonas">
+                    <UInput v-model.number="nuevoEvento.topePersonas" type="number" min="0" placeholder="0" required />
+                </UFormField>
+            </div>
+
+            <UFormField label="Valor" name="valor">
+                <UInput v-model.number="nuevoEvento.valor" type="number" min="0" placeholder="0" />
+                <template #help>
+                    <span class="text-xs text-gray-400">Dejar en 0 si es gratuito</span>
+                </template>
+            </UFormField>
+
+            <UFormField label="URL de la Imagen" name="imagenURL">
+                <UInput v-model="nuevoEvento.imagenURL" placeholder="Ej: https://ejemplo.com/imagen.jpg" />
+                <template #help>
+                    <span class="text-xs text-gray-400">Ingresa la URL completa de la imagen del evento</span>
+                </template>
+            </UFormField>
+
+            <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                <UButton type="button" color="neutral" variant="subtle" @click="cerrarFormulario">
+                    Cancelar
+                </UButton>
+                <UButton type="submit" color="primary" icon="i-heroicons-check" :loading="guardandoEvento">
+                    Crear Evento
+                </UButton>
+            </div>
+        </form>
+    </BaseFormModal>
 </template>

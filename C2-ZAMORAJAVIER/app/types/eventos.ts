@@ -1,11 +1,13 @@
-import type { Estudiantes } from "~/types/estudiante"
+import type { Estudiante } from "~/types/estudiantes"
 
 export interface Evento{
+    id: number
     titulo: string
     fecha: string
     hora: string
     lugar: string
     imagen: string
     valor: number
-    estudiantes: Estudiantes[] | null
+    topePersonas: number
+    estudiantes: Estudiante[]
 }

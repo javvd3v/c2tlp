@@ -1,9 +1,3 @@
-<script lang="ts">
-
-
-</script>
-
-
 <template>
 
     <div>
@@ -78,20 +72,11 @@
 
                 <h2>
                     <div class="text-center mt-10">
-                        <a href="./eventos.vue"
+                        <a href="./eventos"
                             class="inline-block bg-yellow-300 text-gray-900 px-6 py-3 rounded-lg text-lg font-semibold hover:bg-blue-900 hover:text-amber-200 transition-colors">Ver
                             Próximos Eventos</a>
                     </div>
                 </h2>
-            </div>
-
-            <!-- Pie de página -->
-            <div>
-                <div class="bg-gray-900 text-white text-center py-5 mt-auto">
-                    <p>&copy; Javier Zamora, Ing. Informatica, Taller De Lenguaje de Programación.</p>
-                    <img class="hidden md:flex items-start justify-center" src="~/assets/img/Logo_UTFSM.png"
-                        alt="USM Logo" style="height: 70px; margin-top: 10px;">
-                </div>
             </div>
 
         </div>
