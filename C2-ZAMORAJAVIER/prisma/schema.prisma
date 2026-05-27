@@ -25,11 +25,10 @@ model Evento {
 }
 
 model Estudiante{
-  run String @id @db.VarChar(10)
+  run String @unique @db.VarChar(20)
   nombres String @db.VarChar(100)
   apellidos String @db.VarChar(100)
   email String? @db.VarChar(150)
-  fechaNac DateTime?
   eventoId Int
   evento Evento @relation(fields: [eventoId],references: [id])
   @@index([eventoId])

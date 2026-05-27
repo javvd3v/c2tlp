@@ -1,95 +1,88 @@
 <script setup lang="ts">
 import type { Evento } from '~/types/eventos'
 
-// Estado reactivo
-const mostrarFormulario = ref(false)
-const guardandoEvento = ref(false)
-const errorFormulario = ref('')
+// constantes para estudiantes
 
-// Formulario para nuevo evento
-const nuevoEvento = reactive({
-    titulo: '',
-    lugar: '',
-    fecha: '',
-    hora: '',
-    valor: 0,
-    topePersonas: 0,
-    imagenURL: ''
+const mostrarFormularioEstudiante = ref(false)
+const guardandoEstudiante = ref(false)
+const errorFormularioEstudiante = ref('')
+
+const nuevoEstudiante = reactive({
+    run: '',
+    nombres: '',
+    apellidos: '',
+    email: ''
 })
 
-// Obtener eventos desde la API
+const eventoSeleccionado = ref<Evento | null>(null)
+
 const { data: eventos, pending, error, refresh } = await useFetch<Evento[]>('/api/eventos')
 
-// Función para formatear cupos disponibles
+
 const cuposDisponibles = (evento: Evento) => {
     const inscritos = evento.estudiantes?.length || 0
     return evento.topePersonas - inscritos
 }
 
-// Función para formatear precio
+
 const formatearPrecio = (valor: number) => {
     if (valor === 0) return 'Gratis'
     return `$${valor.toLocaleString('es-CL')}`
 }
 
-// Limpiar formulario
-const limpiarFormulario = () => {
-    nuevoEvento.titulo = ''
-    nuevoEvento.lugar = ''
-    nuevoEvento.fecha = ''
-    nuevoEvento.hora = ''
-    nuevoEvento.valor = 0
-    nuevoEvento.topePersonas = 0
-    nuevoEvento.imagenURL = ''
-    errorFormulario.value = ''
+
+const eliminarEstudiante = async (id: number) => {
+    try {
+        await $fetch(`/api/estudiantes/${id}`, { method: 'DELETE' })
+        await refresh()
+    } catch (err) {
+        console.error('Error al eliminar estudiante:', err)
+    }
 }
 
-// Cerrar formulario
-const cerrarFormulario = () => {
-    mostrarFormulario.value = false
-    limpiarFormulario()
+const cerrarFormularioEstudiante = () => {
+    mostrarFormularioEstudiante.value = false
+    limpiarFormularioEstudiante()
 }
 
-// Crear evento
-async function crearEvento() {
-    errorFormulario.value = ''
-    guardandoEvento.value = true
+const limpiarFormularioEstudiante = () => {
+    nuevoEstudiante.nombres = ''
+    nuevoEstudiante.apellidos = ''
+    nuevoEstudiante.email = ''
+    errorFormularioEstudiante.value = ''
+}
+
+
+async function agregarEstudiante(id: number) {
+    errorFormularioEstudiante.value = ''
+    guardandoEstudiante.value = true
 
     try {
-        await $fetch('/api/eventos', {
+        await $fetch('/api/estudiantes', {
             method: 'POST',
             body: {
-                titulo: nuevoEvento.titulo,
-                lugar: nuevoEvento.lugar,
-                fecha: nuevoEvento.fecha,
-                hora: nuevoEvento.hora,
-                imagen: nuevoEvento.imagenURL,
-                valor: nuevoEvento.valor,
-                topePersonas: nuevoEvento.topePersonas,
-                estudiantes: []
+                run: nuevoEstudiante.run,
+                nombres: nuevoEstudiante.nombres,
+                apellidos: nuevoEstudiante.apellidos,
+                email: nuevoEstudiante.email,
+                eventoId: eventoSeleccionado.value?.id || id
             }
         })
 
-        cerrarFormulario()
+        cerrarFormularioEstudiante()
         await refresh()
     } catch (err: any) {
-        errorFormulario.value = getApiErrorMessage(err, 'No se pudo guardar el evento.')
+        // si existe helper para extraer mensaje, usarlo; si no, usar mensaje por defecto
+        try {
+            errorFormularioEstudiante.value = getApiErrorMessage(err, 'No se pudo guardar el estudiante.')
+        } catch {
+            errorFormularioEstudiante.value = 'No se pudo guardar el estudiante.'
+        }
     } finally {
-        guardandoEvento.value = false
+        guardandoEstudiante.value = false
     }
 }
 
-// Inscribirse a un evento
-async function inscribirse(eventoId: number) {
-    try {
-        await $fetch(`/api/eventos/${eventoId}/inscribir`, {
-            method: 'POST'
-        })
-        await refresh()
-    } catch (err: any) {
-        console.error('Error al inscribirse:', err)
-    }
-}
 </script>
 
 <template>
@@ -170,7 +163,8 @@ async function inscribirse(eventoId: number) {
                             </span>
 
                             <UButton :disabled="cuposDisponibles(evento) === 0" color="secondary" variant="solid"
-                                size="sm" @click="inscribirse(evento.id)" class="rounded-full px-5">
+                                size="sm" @click="mostrarFormularioEstudiante = true; eventoSeleccionado = evento"
+                                class="rounded-full px-5">
                                 {{ cuposDisponibles(evento) === 0 ? 'Completo' : 'Inscribirse' }}
                             </UButton>
                         </div>
@@ -187,56 +181,40 @@ async function inscribirse(eventoId: number) {
         </div>
     </div>
 
-    <!-- Modal para crear evento -->
-    <BaseFormModal v-model:open="mostrarFormulario" title="Crear Nuevo Evento"
-        description="Ingresa los detalles del nuevo evento para publicarlo en la plataforma.">
-        <form class="space-y-5" @submit.prevent="crearEvento">
-            <UAlert v-if="errorFormulario" color="error" variant="soft" :title="errorFormulario" class="mb-4" />
+    <!-- Modal para inscribirse en un evento -->
+    <BaseFormModal v-model:open="mostrarFormularioEstudiante" title="Inscribirse a Evento"
+        description="Ingresa los detalles para inscribirte en el evento.">
+        <form class="space-y-5" @submit.prevent="agregarEstudiante(eventoSeleccionado?.id ?? 0)">
+            <UAlert v-if="errorFormularioEstudiante" color="error" variant="soft" :title="errorFormularioEstudiante"
+                icon="i-heroicons-exclamation-triangle" class="mb-4" />
 
-            <UFormField label="Título del Evento" required name="titulo">
-                <UInput v-model="nuevoEvento.titulo" placeholder="Ej: Workshop de Vue" required />
-            </UFormField>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <UFormField label="Lugar" name="lugar">
-                    <UInput v-model="nuevoEvento.lugar" placeholder="Ej: Auditorio Central" />
-                </UFormField>
-
-                <UFormField label="Hora" name="hora">
-                    <UInput v-model="nuevoEvento.hora" type="time" placeholder="--:--" />
-                </UFormField>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <UFormField label="Fecha del Evento" required name="fecha">
-                    <UInput v-model="nuevoEvento.fecha" type="date" required />
-                </UFormField>
-
-                <UFormField label="Cupos Máximos" required name="topePersonas">
-                    <UInput v-model.number="nuevoEvento.topePersonas" type="number" min="0" placeholder="0" required />
-                </UFormField>
-            </div>
-
-            <UFormField label="Valor" name="valor">
-                <UInput v-model.number="nuevoEvento.valor" type="number" min="0" placeholder="0" />
+            <UFormField label="RUN del estudiante" required name="run">
+                <UInput v-model="nuevoEstudiante.run" placeholder="Ej: 12345678-9" required />
                 <template #help>
-                    <span class="text-xs text-gray-400">Dejar en 0 si es gratuito</span>
+                    <span class="text-xs text-gray-400">Formato: XXXXXXXX-X</span>
                 </template>
             </UFormField>
 
-            <UFormField label="URL de la Imagen" name="imagenURL">
-                <UInput v-model="nuevoEvento.imagenURL" placeholder="Ej: https://ejemplo.com/imagen.jpg" />
-                <template #help>
-                    <span class="text-xs text-gray-400">Ingresa la URL completa de la imagen del evento</span>
-                </template>
+            <UFormField label="Nombre/Nombres del estudiante" required name="nombres">
+                <UInput v-model="nuevoEstudiante.nombres" placeholder="Ej: Juan" required />
+            </UFormField>
+
+            <UFormField label="Apellido/Apellidos del estudiante" required name="apellidos">
+                <UInput v-model="nuevoEstudiante.apellidos" placeholder="Ej: Pérez" required />
+            </UFormField>
+
+
+            <UFormField label="Correo electrónico del estudiante" name="email">
+                <UInput v-model="nuevoEstudiante.email" type="email" placeholder="Ej: juan.perez@ejemplo.com" />
             </UFormField>
 
             <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                <UButton type="button" color="neutral" variant="subtle" @click="cerrarFormulario">
+                <UButton type="button" color="neutral" variant="subtle" @click="cerrarFormularioEstudiante">
                     Cancelar
                 </UButton>
-                <UButton type="submit" color="primary" icon="i-heroicons-check" :loading="guardandoEvento">
-                    Crear Evento
+                <UButton type="submit" color="primary" icon="i-heroicons-check" :loading="guardandoEstudiante"
+                    @click="agregarEstudiante(eventoSeleccionado!.id)">
+                    Inscribirse
                 </UButton>
             </div>
         </form>
