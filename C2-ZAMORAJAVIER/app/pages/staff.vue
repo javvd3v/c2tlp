@@ -20,6 +20,14 @@
         imagenURL: ''
     })
 
+    // Formulario para nuevo estudiante
+    const nuevoEstudiante = reactive({
+        run: '',
+        nombres: '',
+        apellidos: '',
+        email: ''
+    })
+
 
     async function eliminarEstudiante(run: string) {
 
@@ -59,6 +67,18 @@
         nuevoEvento.topePersonas = 0
         nuevoEvento.imagenURL = ''
         errorFormulario.value = ''
+    }
+
+    const limpiarFormularioEstudiante = () => {
+        nuevoEstudiante.run = ''
+        nuevoEstudiante.nombres = ''
+        nuevoEstudiante.apellidos = ''
+        nuevoEstudiante.email = ''
+    }
+
+    const refreshYLimpiar = () => {
+        refresh()
+        limpiarFormularioEstudiante()
     }
 
     // Cerrar formulario
@@ -219,13 +239,21 @@
 
                 <div v-if="eventoSeleccionado"
                     class="rounded-xl border border-course-line bg-linear-to-t from-blue-100 to-gray-100 p-4 shadow-lg backdrop-blur sm:p-6 mt-10">
+
                     <div class="mb-4 flex items-center justify-between border-b border-course-line-soft pb-4">
                         <div>
                             <h2 class="text-lg font-semibold text-course-text">Listado de estudiantes</h2>
                             <p class="text-sm text-course-text-muted">Se muestran los estudiantes registrados.</p>
+
                         </div>
+                        <UButton icon="i-heroicons-arrow-path" color="primary" variant="soft" :loading="pending"
+                            @click="refreshYLimpiar()"
+                            class=" self-center rounded-full px-5 text-course-accent-strong shadow-sm text-gray-800">
+                            Actualizar
+                        </UButton>
 
                     </div>
+
 
                     <!-- Cargando -->
                     <div v-if="pending"
@@ -247,6 +275,8 @@
                     <!-- Tabla de estudiantes -->
                     <div v-if="eventoSeleccionado.estudiantes && eventoSeleccionado.estudiantes.length > 0"
                         class="overflow-x-auto rounded-lg border border-course-line bg-blue-100">
+
+
                         <table class="min-w-full divide-y divide-course-line-soft">
                             <thead class="bg-course-surface-soft">
                                 <tr>
